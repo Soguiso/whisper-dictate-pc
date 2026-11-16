@@ -9,3 +9,4 @@ env/
 *.wav
 .idea/
 .vscode/
+config.local.json

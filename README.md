@@ -81,14 +81,18 @@ pip install -r requirements.txt
 
 ## ⚙️ Configuração (`config.json`)
 
-Abra o arquivo `config.json` e ajuste os parâmetros conforme a sua infraestrutura:
+Abra o arquivo `config.json` e ajuste os parâmetros conforme o endereço da sua máquina e suas preferências:
 
 ```json
 {
-  "whisper_url": "http://100.126.30.60:8005/v1/audio/transcriptions",
+  "_comentario_url": "IMPORTANTE: O endereco do servidor e particular. Insira aqui o IP ou dominio do seu servidor Faster-Whisper (ex: http://192.168.1.100:8005/v1/audio/transcriptions ou seu IP da VPN/Tailscale)",
+  "whisper_url": "http://SEU_IP_OU_DOMINIO_DO_SERVIDOR:8005/v1/audio/transcriptions",
+
+  "_comentario_hotkey": "Defina aqui qual tecla de atalho deseja utilizar para iniciar/parar a gravacao (ex: F8, F9, F10, F12)",
+  "hotkey": "F8",
+
   "model": "Systran/faster-whisper-base",
   "language": "pt",
-  "hotkey": "F8",
   "auto_paste": true,
   "copy_to_clipboard": true,
   "sound_feedback": true,
@@ -97,16 +101,10 @@ Abra o arquivo `config.json` e ajuste os parâmetros conforme a sua infraestrutu
 }
 ```
 
-| Parâmetro | Descrição | Padrão |
-| :--- | :--- | :--- |
-| `whisper_url` | Endpoint da API do Whisper (`/v1/audio/transcriptions`) via IP local ou VPN (Tailscale). | `"http://...:8005/..."` |
-| `model` | Modelo carregado no servidor (`base`, `small`, etc.). | `"Systran/faster-whisper-base"` |
-| `language` | Código do idioma (ex: `"pt"` para português, ou `null` para detecção automática). | `"pt"` |
-| `hotkey` | Tecla de atalho global para alternar a gravação. | `"F8"` |
-| `auto_paste` | Se `true`, cola o texto automaticamente onde o cursor estiver posicionado. | `true` |
-| `copy_to_clipboard` | Se `true`, mantém o texto na Área de Transferência (`Ctrl + V`). | `true` |
-| `sound_feedback` | Ativa bipes sonoros ao iniciar e finalizar gravações. | `true` |
-| `sample_rate` | Taxa de amostragem do microfone (16 kHz é ideal para o Whisper). | `16000` |
+### 📌 Destaques de Configuração:
+- 🌐 **`whisper_url` (Endereço Particular):** Como o endereço do servidor é privado e varia de acordo com a sua rede, substitua `SEU_IP_OU_DOMINIO_DO_SERVIDOR` pelo IP local do servidor (ex: `192.168.x.x`), IP da sua VPN (ex: Tailscale) ou domínio pessoal.
+- ⌨️ **`hotkey` (Tecla de Atalho Personalizável):** Escolha a tecla que preferir para alternar o início e fim do ditado (ex: `"F8"`, `"F9"`, `"F10"`, `"F12"`).
+- 🔒 **Dica de Privacidade (`config.local.json`):** Caso queira manter seu IP privado sem enviá-lo ao GitHub, você pode criar um arquivo `config.local.json` contendo apenas `{"whisper_url": "http://seu-ip:8005/..."}`. Esse arquivo já está no `.gitignore` e terá prioridade automática sobre o `config.json`.
 
 ---
 

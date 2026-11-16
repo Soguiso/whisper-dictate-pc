@@ -1,8 +1,12 @@
 {
-  "whisper_url": "http://100.126.30.60:8005/v1/audio/transcriptions",
+  "_comentario_url": "IMPORTANTE: O endereco do servidor e particular. Insira aqui o IP ou dominio do seu servidor Faster-Whisper (ex: http://192.168.1.100:8005/v1/audio/transcriptions ou seu IP da VPN/Tailscale)",
+  "whisper_url": "http://SEU_IP_OU_DOMINIO_DO_SERVIDOR:8005/v1/audio/transcriptions",
+
+  "_comentario_hotkey": "Defina aqui qual tecla de atalho deseja utilizar para iniciar/parar a gravacao (ex: F8, F9, F10, F12)",
+  "hotkey": "F8",
+
   "model": "Systran/faster-whisper-base",
   "language": "pt",
-  "hotkey": "F8",
   "auto_paste": true,
   "copy_to_clipboard": true,
   "sound_feedback": true,

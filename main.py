@@ -12,12 +12,14 @@ import requests
 import pyperclip
 from pynput import keyboard
 
-# Carrega configurações
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+# Caminhos dos arquivos de configuração
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
+LOCAL_CONFIG_FILE = os.path.join(BASE_DIR, "config.local.json")
 
 def load_config():
     default_config = {
-        "whisper_url": "http://100.126.30.60:8005/v1/audio/transcriptions",
+        "whisper_url": "http://SEU_IP_OU_DOMINIO_DO_SERVIDOR:8005/v1/audio/transcriptions",
         "model": "Systran/faster-whisper-base",
         "language": "pt",
         "hotkey": "F8",
@@ -27,14 +29,28 @@ def load_config():
         "sample_rate": 16000,
         "channels": 1
     }
+    
+    # 1. Carrega config.json padrão
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                 loaded = json.load(f)
                 default_config.update(loaded)
         except Exception as e:
-            print(f"[AVISO] Erro ao carregar config.json: {e}. Usando padrões.")
-    return default_config
+            print(f"[AVISO] Erro ao carregar config.json: {e}")
+            
+    # 2. Carrega config.local.json (caso exista configurações privadas locais)
+    if os.path.exists(LOCAL_CONFIG_FILE):
+        try:
+            with open(LOCAL_CONFIG_FILE, "r", encoding="utf-8") as f:
+                local_loaded = json.load(f)
+                default_config.update(local_loaded)
+        except Exception as e:
+            print(f"[AVISO] Erro ao carregar config.local.json: {e}")
+
+    # Remove chaves de comentários (que começam com _)
+    clean_config = {k: v for k, v in default_config.items() if not k.startswith("_")}
+    return clean_config
 
 config = load_config()
 
@@ -77,7 +93,8 @@ class WhisperDictateClient:
             self.audio_frames = []
             self.is_recording = True
             
-        print("\n🔴 [GRAVANDO] Fale agora... (Pressione F8 novamente para parar)")
+        hotkey = self.cfg.get("hotkey", "F8").upper()
+        print(f"\n🔴 [GRAVANDO] Fale agora... (Pressione {hotkey} novamente para parar)")
         self.play_sound("start")
 
         try:
@@ -110,7 +127,7 @@ class WhisperDictateClient:
         except Exception as e:
             print(f"[AVISO] Erro ao fechar stream: {e}")
 
-        # Processa áudio em thread separada para não travar o listener de teclas
+        # Processa áudio em thread separada
         threading.Thread(target=self._process_and_transcribe, daemon=True).start()
 
     def toggle_recording(self):
@@ -124,30 +141,25 @@ class WhisperDictateClient:
             print("⚠️ [AVISO] Nenhum dado de áudio capturado.")
             return
 
-        print("⏳ [PROCESSANDO] Preparando áudio e enviando para o Whisper...")
+        print("⏳ [PROCESSANDO] Enviando áudio para o Whisper...")
         start_time = time.time()
 
         try:
-            # Concatena frames
             audio_data = np.concatenate(self.audio_frames, axis=0)
-            
-            # Valida duração mínima (~0.5s)
             duration_sec = len(audio_data) / self.cfg.get("sample_rate", 16000)
             if duration_sec < 0.4:
                 print(f"⚠️ [AVISO] Gravação muito curta ({duration_sec:.1f}s), ignorada.")
                 return
 
-            # Cria arquivo WAV em memória
             wav_buffer = io.BytesIO()
             with wave.open(wav_buffer, "wb") as wf:
                 wf.setnchannels(self.cfg.get("channels", 1))
-                wf.setsampwidth(2) # 16-bit
+                wf.setsampwidth(2)
                 wf.setframerate(self.cfg.get("sample_rate", 16000))
                 wf.writeframes(audio_data.tobytes())
             
             wav_buffer.seek(0)
             
-            # Prepara payload multipart/form-data
             files = {
                 "file": ("audio.wav", wav_buffer, "audio/wav")
             }
@@ -158,9 +170,12 @@ class WhisperDictateClient:
             if self.cfg.get("language"):
                 data["language"] = self.cfg.get("language")
 
-            url = self.cfg.get("whisper_url", "http://100.126.30.60:8005/v1/audio/transcriptions")
-            
-            # Envia requisição POST
+            url = self.cfg.get("whisper_url", "")
+            if "SEU_IP" in url or "SEU_SERVIDOR" in url or not url.startswith("http"):
+                print("❌ [CONFIGURAÇÃO NECESSÁRIA] Abra o arquivo config.json e preencha a 'whisper_url' com o IP ou domínio do seu servidor!")
+                self.play_sound("error")
+                return
+
             resp = requests.post(url, files=files, data=data, timeout=30)
             
             if resp.status_code == 200:
@@ -172,14 +187,11 @@ class WhisperDictateClient:
                     print(f"✅ [SUCESSO ({elapsed:.1f}s)]: \"{transcribed_text}\"")
                     self.play_sound("success")
                     
-                    # Copia para o clipboard
                     if self.cfg.get("copy_to_clipboard", True):
                         pyperclip.copy(transcribed_text)
                     
-                    # Digita automaticamente no cursor
                     if self.cfg.get("auto_paste", True):
-                        time.sleep(0.08) # Pequena folga para a janela alvo manter o foco
-                        # Simula Ctrl+V
+                        time.sleep(0.08)
                         self.controller.press(keyboard.Key.ctrl)
                         self.controller.press('v')
                         self.controller.release('v')
@@ -194,7 +206,8 @@ class WhisperDictateClient:
             print(f"❌ [ERRO TRANSCRIÇÃO]: {e}")
             self.play_sound("error")
 
-        print("🟢 [PRONTO] Aguardando F8 para gravar...")
+        hotkey = self.cfg.get("hotkey", "F8").upper()
+        print(f"🟢 [PRONTO] Pressione {hotkey} para gravar...")
 
 def main():
     client = WhisperDictateClient(config)
@@ -209,12 +222,16 @@ def main():
     print(f"✍️  Auto-digitar no cursor: {config.get('auto_paste')}")
     print(f"🔔 Feedback Sonoro: {config.get('sound_feedback')}")
     print("=" * 60)
-    print("🟢 [PRONTO] Pressione F8 para iniciar a gravação!")
-    print("   (Para sair, pressione Ctrl + C no terminal)\n")
+    
+    url = config.get('whisper_url', '')
+    if "SEU_IP" in url or "SEU_SERVIDOR" in url:
+        print("⚠️  ATENÇÃO: Configure o endereço particular do seu servidor em config.json antes de gravar!\n")
+    else:
+        print(f"🟢 [PRONTO] Pressione {target_key} para iniciar a gravação!")
+        print("   (Para sair, pressione Ctrl + C no terminal)\n")
 
     def on_press(key):
         try:
-            # Verifica teclas de função (F1 - F12)
             if hasattr(key, 'name') and key.name.upper() == target_key:
                 client.toggle_recording()
             elif hasattr(keyboard.Key, target_key.lower()) and key == getattr(keyboard.Key, target_key.lower()):
