@@ -1,0 +1,11 @@
+{
+  "whisper_url": "http://100.126.30.60:8005/v1/audio/transcriptions",
+  "model": "Systran/faster-whisper-base",
+  "language": "pt",
+  "hotkey": "F8",
+  "auto_paste": true,
+  "copy_to_clipboard": true,
+  "sound_feedback": true,
+  "sample_rate": 16000,
+  "channels": 1
+}
