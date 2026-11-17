@@ -1,2 +1,4 @@
 Set WshShell = CreateObject("WScript.Shell")
-WshShell.Run "pythonw """ & CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName) & "\main.pyw""", 0, False
+scriptDir = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)
+WshShell.CurrentDirectory = scriptDir
+WshShell.Run """C:\Python313\pythonw.exe"" """ & scriptDir & "\main.pyw""", 0, False
